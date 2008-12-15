@@ -1,6 +1,6 @@
 package Lemonldap::Handlers::CAS;
 our ( @ISA, $VERSION, @EXPORTS );
-$VERSION = '1.0';
+$VERSION = '1.1';
 
 
 1;

@@ -23,7 +23,7 @@ use Template;
 use Sys::Hostname;
 
 #A retirer en prod
-#use Data::Dumper;
+use Data::Dumper;
 #### common declaration #######
 our ( @ISA, $VERSION, @EXPORTS );
 $VERSION = '4.0.0';
@@ -330,32 +330,34 @@ END
         'id'     => $ticket,
         'config' => $CONFIG{$ID_COLLECTED}
       );
-    my $servicevalid = $serveursession->{service};
+ my $servicevalid = $serveursession->{service};
     my $user         = $serveursession->{username};
     my $response;
     my $ok;
+    my $cont;
     if ( $servicevalid and $serveursession->{VALID} eq 'TRUE' ) {
         $ok = 1;
     }
 
-    if ( ( $CONFIG{$ID_COLLECTED}->{DISABLEACCESSCONTROL} ) and ( $ok == 1 ) ) {
-
-        $ok = 1;
+    if  ( $CONFIG{$ID_COLLECTED}->{DISABLEACCESSCONTROL} )   {
+        $ok=1;
+        $cont = 1;
     }
-    else {
+# mes modif  
+    
+
+else {
 
 ################  verif sur les habiliatation   #############
-        $ok = 0;
         my $controle = &Lemonldap::Handlers::CoreCAS::locationRules(
             config  => $CONFIG{$ID_COLLECTED},
             session => $principalsession
         );
         if ( ( !$controle == 0 ) and ( defined $controle->{string} ) ) {
-            $ok = 1;
-
+            $cont = 1;
         }
     }
-    if ( $ok == 1 ) {
+    if (( $ok == 1 )  and ($cont ==1 )) {
         $log->info(
 "$CONFIG{$ID_COLLECTED}->{HANDLERID}:$user -- $servicevalid ACCEPTED"
         );
@@ -385,7 +387,7 @@ END
             "$CONFIG{$ID_COLLECTED}->{HANDLERID}:$user -- $servicevalid REJETED"
         );
 
-        if ( $uri !~ /validate/ ) {
+        if ( $uri !~ /validate/i ) {
             $response = "no\n\n";
         }
         else {    # cas v2
@@ -398,6 +400,9 @@ END
             $response .= "</cas:serviceResponse>\n";
         }
 
+        $r->content_type('text/html');
+        $r->print;
+        $r->print($response);
     }
 
     return OK;

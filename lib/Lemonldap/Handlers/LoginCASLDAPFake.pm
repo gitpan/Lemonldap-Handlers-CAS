@@ -17,7 +17,7 @@ use CGI ':cgi-lib';
 use Apache::Session::Memorycached;
 use MIME::Base64;
 use Encode qw(encode);
-use Lemonldap::Portal::Session;
+#use Lemonldap::Portal::Session;
 use Net::LDAP::Entry;
 use IO::File;
 our $VERSION = '3.1.0';
@@ -78,48 +78,35 @@ sub my_none {
 }
 
 sub my_entry {
-    my $self  = shift;
-    my $entry = Net::LDAP::Entry->new();
-    my $user  = $self->user;
-    $entry->dn("uid=$user,dc=demo,dc=net");
-    $entry->add( uid        => $user );
-    $entry->add( mail       => "$user\@demo.net" );
-    $entry->add( roleprofil => 'APPLIX;my_role' );
-    $self->{entry} = $entry;
-    my $fh = IO::File->new_tmpfile;
-    $entry->dump($fh);
-    my @a;
-    seek( $fh, 0, 0 );
-
-    for (<$fh>) {
-        push @a, $_;
-    }
-    my $a = join '<br>', @a;
-    $self->{dump} = $a;
-    undef $fh;
-    return 1;
 }
 
 sub my_credential {
-    my $self = shift;
-
-    # bad password
-    if ( $self->{user} ne $self->{password} ) {
-        $self->{'message'} = $self->{msg}{5};
-        $self->{'error'}   = 5;
-    }
 
 }
 
 sub My_Session {
     my $self     = shift;
-    my $paramxml = $self->{line_session};
 
-    my %Session;
+    my %session;
 
     my $entry = $self->{entry};
-    my $obj = Lemonldap::Portal::Session->init( $paramxml, 'entry' => $entry );
-    $self->{infosession} = $obj;
+
+  $self->{dn}             = $entry->dn();
+
+my @T = ('uid',
+          'cn',
+          'mail',
+         'fonction',
+         'affectation',
+         'personaltitle',
+         'departement',
+	  'grade',
+	  'fonction',
+	  );
+	for( @T ) {
+	  $session{"$_"} = $entry->get_value("$_") ;
+         }
+$self->{infosession} = \%session;
 
 }
 
@@ -204,6 +191,23 @@ sub handler {
         $Stack_User->{line_session} = $line_session;
 
     }
+    # compatibilité encore meilleure  avec lemonldap
+    if (!$idrecup) {
+    my $lemon_cookie = $CookieName;
+    foreach (@tab) {
+        if (/$lemon_cookie=([^; ]+)/) {
+            $cookie = $_;
+        }
+    }
+    if ($cookie) {
+      ($idrecup) = ~ /=(.+)/;
+	}
+    }
+
+
+    
+    
+    
     if ($idrecup) {    ## test itupon memcached
         my %_it;
         tie %_it, 'Apache::Session::Memorycached', $idrecup, $MemcachedServer;
@@ -265,6 +269,7 @@ sub handler {
         $Message = $Retour->message;
         $Erreur  = $Retour->error;
     }
+    print STDERR "MOTPASSE $Message\n";
 ###########################################
     if ( !$Erreur ) {
 ##  on regarde si it existe
@@ -411,48 +416,11 @@ sub handler {
             $r->content_type('text/html');
             $r->headers_out->add( 'Set-Cookie' => $LemonCookie );
             $r->headers_out->add( 'Set-Cookie' => $CASCookie );
-            $r->print;
-            $r->print(<<END1);
-<html>
-  <head>
-    <title>lemonldap websso</title>
-    <style type="text/css" media="all">
-     p { color: #060;
-         font-size: 1.0em;
-         font-family: Verdana, Arial, sans-serif;   
-         font-weight: bold; 
-       } 
-     h1 { color: #000;
-          font-size: 1.5em;
-          font-family: Verdana, Arial, sans-serif;   
-          font-weight: bold; 
-          border-bottom: 3px solid #019733;
-          margin: 40px 0 20px 0px;
-          padding: 0 0.5em 0.5em 0.5em;
-        } 
-      body { background-color: #77E0AB;       }
-      label { background-color: #94DBB7;
-              color: #018023;
-              font-weight: bold;
-              padding: 4px;  
-              font-family: Verdana, Arial, sans-serif;   
-              font-size: 0.9em;
-              width: 500px; 
-            }  
-
-      br { display: none;
-         } 
-      .nodisp { display: none; }
-    </style>
-  </head>
-<body>
-<h1>Hello on lemonldap and CAS  websso 'world</h1>
-<p>
- <center><label>Your are Authenticate on lemondap webSSO  and CAS server</label>  
-</center>
-</body>
-</html>
-END1
+            $redirection="/cas/logged.html";
+	    print CGI::header(
+                -Refresh => '0; URL='.$redirection,
+                -cookie  => [ $LemonCookie, $CASCookie ]
+	    );
             return DONE;
         }
     }

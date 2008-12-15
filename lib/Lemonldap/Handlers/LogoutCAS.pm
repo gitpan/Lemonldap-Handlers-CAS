@@ -60,6 +60,12 @@ sub handler {
     #  $r->headers_out->{'Set-Cookie'}= [$LemonCookie,$CASCookie] ;
     $r->headers_out->add( 'Set-Cookie' => $CASCookie );
     $r->headers_out->add( 'Set-Cookie' => $LemonCookie );
+     $html =~ s/%user%//g;
+     $html =~ s/%secret%//g;
+     $html =~ s/%message%//g;
+     $html =~ s/%urldc%//g;
+     $html =~ s/%urlc%//g;
+     $html =~ s/%it%//g;
 
     $r->print;
     $r->print($html);

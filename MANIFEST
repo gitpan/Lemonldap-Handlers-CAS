@@ -7,7 +7,7 @@ examples/login.htmcas
 examples/logout.htmlcas
 lib/Lemonldap/Handlers/CAS.pm
 lib/Lemonldap/Handlers/CoreCAS.pm
-lib/Lemonldap/Handlers/LoginCASFake.pm
+lib/Lemonldap/Handlers/LoginCAS.pm
 lib/Lemonldap/Handlers/LoginCASLDAPFake.pm
 lib/Lemonldap/Handlers/LogoutCAS.pm
 lib/Lemonldap/Handlers/MemsessionCAS.pm
